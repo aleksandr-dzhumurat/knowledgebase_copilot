@@ -1,47 +1,22 @@
-# Core LangChain and RAG Dependencies
-langchain==0.1.0
-langchain-community==0.0.13
+# LangChain
+langchain-community>=0.0.13
 
-# Ollama Integration
-ollama==0.1.6
+# PDF processing
+pypdf>=5.1.0
+docling
 
-# Vector Database
-chromadb==0.4.22
+# Audio transcription (Apple Silicon)
+mlx-whisper
+tqdm
 
-# Document Loaders
-pypdf==3.17.4
-python-docx==1.1.0
-docx2txt==0.8
-unstructured==0.11.8
-# docling  # For PDF OCR with VLM (used in src/ocr_graphite.py)
-# python-magic-bin not compatible with Apple Silicon
-# Install libmagic via homebrew instead: brew install libmagic
-# Then install: pip install python-magic
+# Google AI
+google-genai
 
-# File Watching (for automation)
-watchdog==3.0.0
-
-# Embeddings and Text Processing
-sentence-transformers==2.2.2
-
-# HTTP Requests (for Ollama verification)
-requests==2.31.0
-
-# Utilities
-python-dotenv==1.0.0  # For environment variables
-pync==2.0.3  # macOS notifications (optional)
-
-# Progress bars (optional but nice)
-tqdm==4.66.1
-
-# HTML Parsing
+# HTML parsing
 beautifulsoup4==4.12.3
 
-# Token counting
+# Text processing
 tiktoken
 
-markdown_pdf
-pypandoc
-
-google-genai
-google-cloud-storage
+# Utilities
+python-dotenv==1.0.0

@@ -16,11 +16,7 @@ if [ ! -f "$INPUT_FILE" ]; then
     exit 1
 fi
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-OUTPUT_DIR="$PROJECT_DIR/data/audio"
-
-mkdir -p "$OUTPUT_DIR"
+OUTPUT_DIR="$(dirname "$INPUT_FILE")"
 
 BASENAME=$(basename "$INPUT_FILE")
 OUTPUT_NAME="${BASENAME%.*}.mp3"

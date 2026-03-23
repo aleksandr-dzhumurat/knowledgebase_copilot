@@ -134,7 +134,8 @@ def get_audio_duration(audio_path: Path) -> float:
 
 def split_audio_file(audio_path: Path, intervals: list[Interval]) -> list[Path]:
     """Split audio file into chunks based on intervals using ffmpeg."""
-    output_dir = audio_path.parent
+    output_dir = audio_path.parent / audio_path.stem
+    output_dir.mkdir(exist_ok=True)
     base_name = audio_path.stem
     output_files = []
 
@@ -175,7 +176,7 @@ def main():
     # Derive silence log path from audio file
     log_path = audio_path.with_name(audio_path.stem + '_silence.log')
     if not log_path.exists():
-        print(f"Error: Silence log '{log_path}' not found. Run silence_detector.sh first.", file=sys.stderr)
+        print(f"Error: Silence log '{log_path}' not found. Run silence_detector.py first.", file=sys.stderr)
         sys.exit(1)
 
     silence_periods = parse_silence_log(log_path)

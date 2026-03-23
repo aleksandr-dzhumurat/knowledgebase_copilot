@@ -1,7 +1,21 @@
 #!/usr/bin/env python3
 """
-Script to process MHTML files exported from ChatGPT conversations.
-Extracts conversation blocks and prints their text content.
+Parse ChatGPT conversation exports (MHTML) into Q&A JSONL datasets.
+
+Use case:
+    Export a ChatGPT conversation from the browser (Save Page As → Web Page, Complete),
+    place the resulting .mhtml files in a subdirectory under data/, then run:
+
+        python src/parse_openai_webpage.py <dir_name>
+
+    where <dir_name> is the subdirectory name relative to data/.
+    Each .mhtml file produces a corresponding .jsonl file in the same directory,
+    with one {"question": ..., "answer": ...} record per user/assistant exchange.
+
+Example:
+    # Save ChatGPT pages to data/my_chats/, then:
+    python src/parse_openai_webpage.py my_chats
+    # Output: data/my_chats/conversation_1.jsonl, ...
 """
 
 import argparse
