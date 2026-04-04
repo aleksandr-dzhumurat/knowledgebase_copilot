@@ -5,7 +5,7 @@ To install dependencies:
     uv pip install pypdf docling
 
 Usage:
-    uv run python scripts/pdf_to_md.py --start 148 --end 155 --input $(pwd)/data/Data_and_AI_Tech_Insight.pdf
+    uv run python scripts/pdf_to_md.py --start 148 --end 155 --input $(pwd)/data/long_boring_demo.pdf
     uv run python scripts/pdf_to_md.py --input $(pwd)/week_01_agents_shrinked.pdf
 """
 

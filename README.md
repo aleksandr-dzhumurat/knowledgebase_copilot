@@ -11,25 +11,6 @@ source .venv/bin/activate
 uv pip install -r requirements.txt
 ```
 
-## Services
-
-### Chroma
-Version endpoint: http://0.0.0.0:8000/api/v2/version
-
-### Ollama Models
-```bash
-ollama pull granite3.3:8b
-ollama pull nomic-embed-text
-```
-
-### Ollama Embeddings Generation
-```bash
-curl http://localhost:11434/api/embeddings -d '{
-  "model": "nomic-embed-text",
-  "prompt": "Hello, this is a test"
-}'
-```
-
 ## Tools
 
 ### Markdown Validation
@@ -92,3 +73,22 @@ python scripts/text_merger.py --prefix recording_chunk
 Output: `data/recognized_speech/recording_chunk_merged.txt`
 
 
+
+## Services
+
+### Chroma
+Version endpoint: http://0.0.0.0:8000/api/v2/version
+
+### Ollama Models
+```bash
+ollama pull granite3.3:8b
+ollama pull nomic-embed-text
+```
+
+### Ollama Embeddings Generation
+```bash
+curl http://localhost:11434/api/embeddings -d '{
+  "model": "nomic-embed-text",
+  "prompt": "Hello, this is a test"
+}'
+```
