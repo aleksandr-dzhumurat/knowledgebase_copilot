@@ -17,13 +17,17 @@ MODEL = "mlx-community/whisper-medium"
 
 
 def transcribe(audio_path: str, language: str = "en"):
+    srt_path = audio_path.rsplit(".", 1)[0] + ".srt"
+    if Path(srt_path).is_file():
+        print(f"SRT already exists: {srt_path}")
+        return srt_path
+
     print(f"Transcribing: {audio_path}")
     print("Loading model and processing audio (this may take a moment)...")
 
     result = whisper.transcribe(audio_path, path_or_hf_repo=MODEL, language=language)
     segments = result["segments"]
 
-    srt_path = audio_path.rsplit(".", 1)[0] + ".srt"
     with open(srt_path, "w") as f:
         for i, seg in tqdm(
             enumerate(segments, start=1), total=len(segments), desc="Writing .srt"
@@ -33,6 +37,7 @@ def transcribe(audio_path: str, language: str = "en"):
             f.write(f"{seg['text'].strip()}\n\n")
 
     print(f"Saved: {srt_path}")
+    return srt_path
 
 
 def fmt(seconds: float) -> str:

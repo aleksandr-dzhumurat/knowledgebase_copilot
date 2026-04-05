@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from extract_audio import extract_audio_pipeline
+from pdf_to_md import convert, reformat_image_links
+from whisper_to_srt import transcribe
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.nebius import NebiusProvider
@@ -27,7 +29,9 @@ project_manager_agent = Agent(
         'You are a project manager agent assisting a software development team.'
         'Your task is to analyze team performance and provide actionable insights.'
         'You can process documents using the following tools:'
-        'Before calling extract_audio, use file_exist to resolve the full path, then confirm it with the user. Be precise: just print the full path and ask to confirm, not be wordy.'
+        'When the user mentions a file, call file_search to find it. If found, confirm the full path with the user before calling any tool. Be precise: just print the full path and ask to confirm, not be wordy.'
+        'For .mp4 files: after confirmation call extract_audio, then automatically call extract_srt with the returned mp3 path.'
+        'For .pdf files: after confirmation call pdf_to_md.'
     ),
     deps_type=SupportDependencies
 )
@@ -36,18 +40,22 @@ project_manager_agent = Agent(
 def add_home_dir(ctx: RunContext[SupportDependencies]) -> str:
     return f"The user's home directory is: {ctx.deps.home_dir}. Use it to resolve file paths like Downloads, Documents, etc."
 
+SEARCH_DIRS = ["Downloads", "Documents", "PycharmProjects"]
+
+
 @project_manager_agent.tool
-def file_exist(ctx: RunContext[SupportDependencies], video_path: str) -> str:
-    """Resolves a file path relative to home_dir and checks if it exists. Returns the full resolved path."""
-    path = Path(video_path).expanduser()
-    if not path.exists():
-        relative = Path(*path.parts[1:]) if path.is_absolute() else path
-        resolved = ctx.deps.home_dir
-        for part in relative.parts:
-            matches = [p for p in resolved.iterdir() if p.name.lower() == part.lower()]
-            resolved = matches[0] if matches else resolved / part
-        path = resolved
-    return str(path) if path.exists() else f"File not found: {path}"
+def file_search(ctx: RunContext[SupportDependencies], filename: str) -> str:
+    """Search for a file by name across Downloads, Documents and PycharmProjects under home_dir."""
+    matches = []
+    for search_dir in SEARCH_DIRS:
+        base = ctx.deps.home_dir / search_dir
+        if base.is_dir():
+            matches.extend(base.rglob(filename))
+    if not matches:
+        return f"File '{filename}' not found in {SEARCH_DIRS}"
+    if len(matches) == 1:
+        return str(matches[0])
+    return "Multiple files found:\n" + "\n".join(str(p) for p in matches)
 
 
 @project_manager_agent.tool
@@ -55,6 +63,26 @@ async def extract_audio(_ctx: RunContext[SupportDependencies], video_path: str) 
     """Extracts audio from a video file and saves it as an MP3 file. Expects a full resolved path."""
     output_file = extract_audio_pipeline(video_path)
     return f"Audio extracted to: {output_file}"
+
+
+@project_manager_agent.tool
+async def extract_srt(_ctx: RunContext[SupportDependencies], mp3_path: str) -> str:
+    """Transcribes an MP3 file to an SRT subtitles file using Whisper."""
+    srt_path = transcribe(mp3_path)
+    return f"SRT saved to: {srt_path}"
+
+
+@project_manager_agent.tool
+def pdf_to_md(_ctx: RunContext[SupportDependencies], pdf_path: str) -> str:
+    """Convert a PDF file to markdown. Skips if output already exists."""
+    path = Path(pdf_path).resolve()
+    output_dir = path.with_suffix("")
+    md_path = output_dir.parent / f"{path.stem}.md"
+    if md_path.exists():
+        return f"Markdown already exists: {md_path}"
+    convert(path, start_page=1)
+    reformat_image_links(output_dir)
+    return f"Markdown saved to: {md_path}"
 
 def _spinner(stop_event: threading.Event) -> None:
     for frame in itertools.cycle(["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]):

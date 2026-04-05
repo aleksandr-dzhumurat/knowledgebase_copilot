@@ -20,6 +20,10 @@ def extract_audio_pipeline(video_path: str = None):
 
     output_file = input_file.with_suffix(".mp3")
 
+    if output_file.is_file():
+        print(f"Audio already exists: {output_file}")
+        return output_file
+
     print(f"Extracting audio from: {input_file}")
     print(f"Output file: {output_file}")
 

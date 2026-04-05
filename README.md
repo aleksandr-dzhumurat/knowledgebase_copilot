@@ -1,8 +1,6 @@
 # Home Brain
 
-## Dependencies
-
-### Python Dependencies
+## Python Dependencies
 
 Install with:
 ```bash
@@ -10,6 +8,51 @@ uv venv
 source .venv/bin/activate
 uv pip install -r requirements.txt
 ```
+
+## Agent usage
+
+Run chat using
+
+```shell
+make chat
+```
+
+Dialog example
+
+
+For now, one tool call is shown as an example — extracting an audio track from an .mp4 file
+
+👨 You: LLM_Architectures_week_1.mp4
+🤖 Agent:
+
+The file path has been resolved to:
+`/Users/adzhumurat/Downloads/LLM_Architectures_week_1.mp4`
+
+Then the ffmpeg magic begins (I'll probably wrap it in a separate background process later)
+
+🤖 Thinking... ⠴ Input #0, mov,mp4,m4a,3gp,3g2,mj2, from '/Users/adzhumurat/Downloads/LLM_Architectures_week_1.mp4':
+  Metadata:
+    major_brand     : isom
+    minor_version   : 512
+    compatible_brands: isomiso2avc1mp41
+    encoder         : https://clipchamp.com
+    comment         : Create videos with https://clipchamp.com/en/video-editor - free online video editor, video compressor, video converter.
+  Duration: 02:30:40.03, start: 0.000000, bitrate: 743 kb/s
+
+🤖 Thinking... ⠹ Done! Audio saved to: /Users/adzhumurat/Downloads/LLM_Architectures_week_1.mp3
+
+And after completion the bot waits for the next instructions
+
+🤖 Agent:
+
+The audio has been successfully extracted and saved to:
+`/Users/adzhumurat/Downloads/LLM_Architectures_week_1.mp3`
+
+Let me know if you need anything else!
+
+Over the next week I'll add more tools for filesystem operations, plus a memory layer and observability (most likely langfuse)
+
+
 
 ## Tools
 
