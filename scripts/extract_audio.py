@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 
-import sys
 import subprocess
+import sys
 from pathlib import Path
 
 
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: python scripts/extract_audio.py <path_to_video_file>")
-        sys.exit(1)
+def extract_audio_pipeline(video_path: str = None):
+    if video_path is None:
+        if len(sys.argv) < 2:
+            print("Usage: python scripts/extract_audio.py <path_to_video_file>")
+            sys.exit(1)
+        video_path = sys.argv[1]
 
-    input_file = Path(sys.argv[1])
+    input_file = Path(video_path)
 
     if not input_file.is_file():
         print(f"Error: File '{input_file}' not found")
@@ -27,7 +29,8 @@ def main():
     )
 
     print(f"Done! Audio saved to: {output_file}")
+    return output_file
 
 
 if __name__ == "__main__":
-    main()
+    extract_audio_pipeline()

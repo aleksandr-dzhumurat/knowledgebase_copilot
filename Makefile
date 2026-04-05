@@ -1,4 +1,6 @@
 CURRENT_DIR = $(shell pwd)
+include .env
+export
 
 prepare-dirs:
 	mkdir -p data/chroma_data || true
@@ -17,3 +19,6 @@ latex:
 	@ls -lh interview_questions.pdf 2>/dev/null || echo "PDF not found in current directory"
 	@echo "============================================================"
 # 	rm ${CURRENT_DIR}/*.log ${CURRENT_DIR}/*.aux ${CURRENT_DIR}/*.out 2>/dev/null || true
+
+make chat:
+	uv run python scripts/chat.py
