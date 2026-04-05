@@ -9,8 +9,9 @@ docling
 mlx-whisper
 tqdm
 
-# Google AI
+# Agentic AI
 google-genai
+pydantic_ai
 
 # HTML parsing
 beautifulsoup4==4.12.3
