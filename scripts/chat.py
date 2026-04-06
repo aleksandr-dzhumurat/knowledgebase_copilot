@@ -1,3 +1,9 @@
+"""
+uv run python scripts/retrieval.py \
+  --md "data/Small Language Models for Efficient Agentic Tool Calling, Outperforming Large Models with Targeted Fine-tuning.md" \
+  --query "LORA"
+"""
+
 import itertools
 import os
 import sys
@@ -7,12 +13,12 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from extract_audio import extract_audio_pipeline
-from pdf_to_md import convert, reformat_image_links
-from whisper_to_srt import transcribe
 from langfuse import get_client
+from pdf_to_md import convert, reformat_image_links
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.nebius import NebiusProvider
+from whisper_to_srt import transcribe
 
 Agent.instrument_all()
 langfuse = get_client()
