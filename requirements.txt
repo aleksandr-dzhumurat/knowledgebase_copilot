@@ -12,6 +12,7 @@ tqdm
 # Agentic AI
 google-genai
 pydantic_ai
+langfuse
 
 # HTML parsing
 beautifulsoup4==4.12.3
