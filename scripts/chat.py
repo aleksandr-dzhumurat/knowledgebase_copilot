@@ -9,9 +9,13 @@ from pathlib import Path
 from extract_audio import extract_audio_pipeline
 from pdf_to_md import convert, reformat_image_links
 from whisper_to_srt import transcribe
+from langfuse import get_client
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.nebius import NebiusProvider
+
+Agent.instrument_all()
+langfuse = get_client()
 
 
 @dataclass
