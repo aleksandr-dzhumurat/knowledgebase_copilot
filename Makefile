@@ -3,7 +3,8 @@ include .env
 export
 
 prepare-dirs:
-	mkdir -p data/chroma_data || true
+	mkdir -p data/chroma_data
+	mkdir -p data/history
 
 run-chroma:
 	docker run -d \
@@ -21,4 +22,4 @@ latex:
 # 	rm ${CURRENT_DIR}/*.log ${CURRENT_DIR}/*.aux ${CURRENT_DIR}/*.out 2>/dev/null || true
 
 make chat:
-	uv run python scripts/chat.py
+	DATA_DIR=${CURRENT_DIR}/history PYTHONPATH=${CURRENT_DIR} uv run python scripts/chat.py
