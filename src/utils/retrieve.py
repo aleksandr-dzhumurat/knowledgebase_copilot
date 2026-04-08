@@ -16,7 +16,7 @@ class Slide:
 @dataclass
 class DocumentNode:
     header: str
-    body: str
+    body: str | None = None
     source: Path | None = None
     parent: "DocumentNode | None" = None
     node_name: str = field(init=False)

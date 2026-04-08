@@ -21,5 +21,10 @@ latex:
 	@echo "============================================================"
 # 	rm ${CURRENT_DIR}/*.log ${CURRENT_DIR}/*.aux ${CURRENT_DIR}/*.out 2>/dev/null || true
 
+list-models:
+	curl -s https://api.studio.nebius.com/v1/models \
+		-H "Authorization: Bearer ${NEBIUS_API_KEY}" \
+		| python3 -c "import json,sys; [print(m['id']) for m in json.load(sys.stdin).get('data',[])]"
+
 make chat:
-	DATA_DIR=${CURRENT_DIR}/history PYTHONPATH=${CURRENT_DIR} uv run python scripts/chat.py
+	DATA_DIR=${CURRENT_DIR}/data/history PYTHONPATH=${CURRENT_DIR} uv run python scripts/chat.py
