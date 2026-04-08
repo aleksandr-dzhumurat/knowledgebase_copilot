@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from agent import SupportDependencies, project_manager_agent
+from agent import SupportDependencies, langfuse, project_manager_agent
 from memory_layer import MessageHistory
 
 
@@ -43,3 +43,4 @@ if __name__ == "__main__":
     finally:
         if message_history:
             message_history.dump_history(history_path)
+        langfuse.flush()
