@@ -17,7 +17,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from utils.retrieve import (
+from utils.retrieve_md import (
     DocumentNode,
     Slide,
     check_heading_hierarchy,

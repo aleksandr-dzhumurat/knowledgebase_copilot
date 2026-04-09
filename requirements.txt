@@ -1,5 +1,4 @@
-# LangChain
-langchain-community>=0.0.13
+langchain-community
 
 # PDF processing
 pypdf>=5.1.0
@@ -20,6 +19,9 @@ beautifulsoup4==4.12.3
 # Text processing
 tiktoken
 scikit-learn
+
+# YouTube downloading
+pytubefix
 
 # Utilities
 python-dotenv==1.0.0

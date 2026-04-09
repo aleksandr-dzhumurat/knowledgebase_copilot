@@ -1,28 +1,17 @@
 import argparse
-import logging
-import os
+import sys
 from pathlib import Path
 from typing import Iterator, Optional
 
 from dotenv import load_dotenv
-from google import genai
+
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from utils.common import get_logger
+from utils.llm_adapter import GeminiAdapter
 
 load_dotenv()
 
-logger = logging.getLogger(__name__)
-if not logging.getLogger().handlers:
-    logging.basicConfig(level=logging.INFO)
-
-
-class GeminiAdapter:
-    """Adapter for Google Gemini API."""
-
-    def __init__(self, model: str = "gemini-2.5-flash"):
-        self._model = model
-        self._client = genai.Client(
-            api_key=os.environ.get("GOOGLE_API_KEY"),
-            vertexai=False,
-        )
+logger = get_logger(__name__)
 
 
 def audio_file_iterator(
@@ -87,7 +76,6 @@ if __name__ == "__main__":
             ],
         )
 
-        # Save response to file
         output_file = output_dir / f"{f.stem}.txt"
         output_file.write_text(response.text, encoding="utf-8")
         print(f"Saved: {output_file}")
