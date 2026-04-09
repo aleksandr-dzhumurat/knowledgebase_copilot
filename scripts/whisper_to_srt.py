@@ -9,6 +9,7 @@ Usage:
 """
 
 import sys
+from pathlib import Path
 
 import mlx_whisper as whisper
 from tqdm import tqdm
@@ -17,6 +18,7 @@ MODEL = "mlx-community/whisper-medium"
 
 
 def transcribe(audio_path: str, language: str = "en"):
+    audio_path = audio_path.strip('"').strip("'")
     srt_path = audio_path.rsplit(".", 1)[0] + ".srt"
     if Path(srt_path).is_file():
         print(f"SRT already exists: {srt_path}")
@@ -28,13 +30,16 @@ def transcribe(audio_path: str, language: str = "en"):
     result = whisper.transcribe(audio_path, path_or_hf_repo=MODEL, language=language)
     segments = result["segments"]
 
+    idx = 1
     with open(srt_path, "w") as f:
-        for i, seg in tqdm(
-            enumerate(segments, start=1), total=len(segments), desc="Writing .srt"
-        ):
-            f.write(f"{i}\n")
+        for seg in tqdm(segments, total=len(segments), desc="Writing .srt"):
+            text = seg['text'].strip()
+            if len(text) < 10:
+                continue
+            f.write(f"{idx}\n")
             f.write(f"{fmt(seg['start'])} --> {fmt(seg['end'])}\n")
-            f.write(f"{seg['text'].strip()}\n\n")
+            f.write(f"{text}\n\n")
+            idx += 1
 
     print(f"Saved: {srt_path}")
     return srt_path

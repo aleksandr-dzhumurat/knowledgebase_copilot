@@ -6,14 +6,18 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent))
 
-from utils.audio import extract_audio_pipeline
+import shutil
+
+from prompts import PROJECT_MANAGER_INSTRUCTIONS, RETRIEVAL_AGENT_INSTRUCTIONS, home_dir_prompt
+from utils.audio import convert_to_mp3, extract_audio_pipeline
+from utils.youtube import download_audio as yt_download_audio, download_video as yt_download_video
 from langfuse import get_client
-from utils.pdf import convert, reformat_image_links
+from utils.pdf_to_md import convert, reformat_image_links
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.agent import InstrumentationSettings
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.nebius import NebiusProvider
-from utils.retrieve import DocumentIndex, DocumentNode
+from utils.retrieve_md import DocumentIndex, DocumentNode
 from whisper_to_srt import transcribe
 
 Agent.instrument_all(InstrumentationSettings(include_content=True, version=1))
@@ -42,12 +46,7 @@ _retrieval_model = OpenAIChatModel(
 
 retrieval_agent = Agent(
     _retrieval_model,
-    instructions=(
-        'You are a document retrieval specialist. '
-        'Use the search_documents tool to find relevant content in indexed markdown files. '
-        'If the search returns no results, rephrase the query using synonyms or simpler terms and call search_documents again (at most 2 retries). '
-        'Return the most relevant excerpts you found, or clearly state that nothing was found.'
-    ),
+    instructions=RETRIEVAL_AGENT_INSTRUCTIONS,
     deps_type=RetrievalDependencies,
     output_type=str,
 )
@@ -74,22 +73,14 @@ def search_documents(ctx: RunContext[RetrievalDependencies], query: str) -> str:
 
 project_manager_agent = Agent(
     _main_model,
-    instructions=(
-        'You are a project manager agent assisting a software development team.'
-        'Your task is to analyze team performance and provide actionable insights.'
-        'You can process documents using the following tools:'
-        'When the user mentions a file, call file_search to find it. If file_search returns nothing, call file_fuzzy_search with the same query. If found, confirm the full path with the user before calling any tool. Be precise: just print the full path and ask to confirm, not be wordy.'
-        'For .mp4 files: after confirmation call extract_audio, then automatically call extract_srt with the returned mp3 path.'
-        'For .pdf files: after confirmation call pdf_to_md.'
-        'When the user asks about the content of a markdown file or directory, call search_file_content with the resolved path and the user query.'
-    ),
+    instructions=PROJECT_MANAGER_INSTRUCTIONS,
     deps_type=SupportDependencies
 )
 
 
 @project_manager_agent.system_prompt
 def add_home_dir(ctx: RunContext[SupportDependencies]) -> str:
-    return f"The user's home directory is: {ctx.deps.home_dir}. Use it to resolve file paths like Downloads, Documents, etc."
+    return home_dir_prompt(ctx.deps.home_dir)
 
 
 SEARCH_DIRS = ["Downloads", "Documents", "PycharmProjects"]
@@ -142,10 +133,17 @@ async def extract_audio(_ctx: RunContext[SupportDependencies], video_path: str) 
 
 
 @project_manager_agent.tool
-async def extract_srt(_ctx: RunContext[SupportDependencies], mp3_path: str) -> str:
-    """Transcribes an MP3 file to an SRT subtitles file using Whisper."""
-    srt_path = transcribe(mp3_path)
+async def extract_srt(_ctx: RunContext[SupportDependencies], mp3_path: str, language: str = "en") -> str:
+    """Transcribes an MP3 file to an SRT subtitles file using Whisper. language is a BCP-47 code e.g. 'en', 'ru'."""
+    srt_path = transcribe(mp3_path, language=language)
     return f"SRT saved to: {srt_path}"
+
+
+@project_manager_agent.tool
+def m4a_to_mp3(_ctx: RunContext[SupportDependencies], input_path: str) -> str:
+    """Convert an m4a (or other audio) file to mp3. Expects a full resolved path."""
+    output_file = convert_to_mp3(input_path)
+    return f"MP3 saved to: {output_file}"
 
 
 @project_manager_agent.tool
@@ -154,6 +152,20 @@ async def search_file_content(ctx: RunContext[SupportDependencies], md_path: str
     path = Path(md_path).expanduser().resolve()
     result = await retrieval_agent.run(query, deps=RetrievalDependencies(md_path=path), usage=ctx.usage)
     return result.output
+
+
+_YOUTUBE_DIR = Path(__file__).parent.parent / "data" / "youtube"
+
+
+@project_manager_agent.tool
+async def youtube_download(_ctx: RunContext[SupportDependencies], url: str, mode: str = "video") -> str:
+    """Download a YouTube video or audio track. mode must be 'video' or 'audio'."""
+    _YOUTUBE_DIR.mkdir(parents=True, exist_ok=True)
+    if mode == "audio":
+        path = yt_download_audio(url, output_dir=_YOUTUBE_DIR)
+    else:
+        path = yt_download_video(url, output_dir=_YOUTUBE_DIR)
+    return f"Downloaded to: {path}"
 
 
 @project_manager_agent.tool
@@ -167,3 +179,16 @@ def pdf_to_md(_ctx: RunContext[SupportDependencies], pdf_path: str) -> str:
     convert(path, start_page=1)
     reformat_image_links(output_dir)
     return f"Markdown saved to: {md_path}"
+
+
+@project_manager_agent.tool
+def remove_file(_ctx: RunContext[SupportDependencies], file_path: str) -> str:
+    """Delete a file or directory. Uses shutil.rmtree for directories, Path.unlink for files."""
+    path = Path(file_path).expanduser().resolve()
+    if not path.exists():
+        return f"Not found: {path}"
+    if path.is_dir():
+        shutil.rmtree(path)
+        return f"Directory removed: {path}"
+    path.unlink()
+    return f"File removed: {path}"
