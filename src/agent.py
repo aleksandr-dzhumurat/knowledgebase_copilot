@@ -3,22 +3,26 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 sys.path.insert(0, str(Path(__file__).parent))
 
 import shutil
 
-from prompts import PROJECT_MANAGER_INSTRUCTIONS, RETRIEVAL_AGENT_INSTRUCTIONS, home_dir_prompt
-from utils.audio import convert_to_mp3, extract_audio_pipeline
-from utils.youtube import download_audio as yt_download_audio, download_video as yt_download_video
 from langfuse import get_client
-from utils.pdf_to_md import convert, reformat_image_links
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.agent import InstrumentationSettings
 from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.nebius import NebiusProvider
+
+from prompts import (
+    PROJECT_MANAGER_INSTRUCTIONS,
+    RETRIEVAL_AGENT_INSTRUCTIONS,
+    home_dir_prompt,
+)
+from utils.audio import convert_to_mp3, extract_audio_pipeline, transcribe
+from utils.pdf_to_md import convert, reformat_image_links
 from utils.retrieve_md import DocumentIndex, DocumentNode
-from whisper_to_srt import transcribe
+from utils.youtube import download_audio as yt_download_audio
+from utils.youtube import download_video as yt_download_video
 
 Agent.instrument_all(InstrumentationSettings(include_content=True, version=1))
 langfuse = get_client()
@@ -53,11 +57,13 @@ retrieval_agent = Agent(
 
 
 @retrieval_agent.tool
-def search_documents(ctx: RunContext[RetrievalDependencies], query: str) -> str:
+def query_documents(ctx: RunContext[RetrievalDependencies], query: str) -> str:
     """Search the indexed markdown document(s) using TF-IDF cosine similarity."""
     md_path = ctx.deps.md_path
     if md_path.is_dir():
         index = DocumentIndex.from_dir(md_path)
+    elif md_path.suffix == '.srt':
+        index = DocumentIndex.from_srt_file(md_path)
     else:
         index = DocumentIndex.from_md_file(md_path)
     results, total = index.search(query, top_k=5)

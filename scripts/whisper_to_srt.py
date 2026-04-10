@@ -11,53 +11,15 @@ Usage:
 import sys
 from pathlib import Path
 
-import mlx_whisper as whisper
-from tqdm import tqdm
-
-MODEL = "mlx-community/whisper-medium"
-
-
-def transcribe(audio_path: str, language: str = "en"):
-    audio_path = audio_path.strip('"').strip("'")
-    srt_path = audio_path.rsplit(".", 1)[0] + ".srt"
-    if Path(srt_path).is_file():
-        print(f"SRT already exists: {srt_path}")
-        return srt_path
-
-    print(f"Transcribing: {audio_path}")
-    print("Loading model and processing audio (this may take a moment)...")
-
-    result = whisper.transcribe(audio_path, path_or_hf_repo=MODEL, language=language)
-    segments = result["segments"]
-
-    idx = 1
-    with open(srt_path, "w") as f:
-        for seg in tqdm(segments, total=len(segments), desc="Writing .srt"):
-            text = seg['text'].strip()
-            if len(text) < 10:
-                continue
-            f.write(f"{idx}\n")
-            f.write(f"{fmt(seg['start'])} --> {fmt(seg['end'])}\n")
-            f.write(f"{text}\n\n")
-            idx += 1
-
-    print(f"Saved: {srt_path}")
-    return srt_path
-
-
-def fmt(seconds: float) -> str:
-    h = int(seconds // 3600)
-    m = int((seconds % 3600) // 60)
-    s = int(seconds % 60)
-    ms = int((seconds % 1) * 1000)
-    return f"{h:02}:{m:02}:{s:02},{ms:03}"
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from utils.audio import transcribe
 
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print("Usage: python whisper_to_srt.py <audio.mp3>")
         sys.exit(1)
-        
+
     audio_file = sys.argv[1]
     if audio_file.lower().endswith(".mp4"):
         print(f"Error: {audio_file} is an .mp4 video file.")
@@ -65,5 +27,5 @@ if __name__ == "__main__":
         expected_mp3 = audio_file.rsplit(".", 1)[0] + ".mp3"
         print(f"After doing that, run: uv run python scripts/whisper_to_srt.py '{expected_mp3}'")
         sys.exit(1)
-        
+
     transcribe(audio_file)

@@ -4,6 +4,11 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
+import mlx_whisper as whisper
+from tqdm import tqdm
+
+_WHISPER_MODEL = "mlx-community/whisper-medium"
+
 
 def extract_audio_pipeline(video_path: str = None):
     if video_path is None:
@@ -179,4 +184,78 @@ def split_audio_file(audio_path: Path, intervals: list[Interval]) -> list[Path]:
             raise RuntimeError(f"ffmpeg failed for chunk {i}: {result.stderr}")
         output_files.append(output_path)
         print(f"Created: {output_path.name}")
+    return output_files
+
+
+def fmt(seconds: float) -> str:
+    h = int(seconds // 3600)
+    m = int((seconds % 3600) // 60)
+    s = int(seconds % 60)
+    ms = int((seconds % 1) * 1000)
+    return f"{h:02}:{m:02}:{s:02},{ms:03}"
+
+
+def transcribe(audio_path: str, language: str = "en") -> str:
+    """Transcribe an audio file to an SRT subtitles file using Whisper."""
+    audio_path = audio_path.strip('"').strip("'")
+    srt_path = audio_path.rsplit(".", 1)[0] + ".srt"
+    if Path(srt_path).is_file():
+        print(f"SRT already exists: {srt_path}")
+        return srt_path
+
+    print(f"Transcribing: {audio_path}")
+    print("Loading model and processing audio (this may take a moment)...")
+
+    result = whisper.transcribe(audio_path, path_or_hf_repo=_WHISPER_MODEL, language=language)
+    segments = result["segments"]
+
+    idx = 1
+    with open(srt_path, "w") as f:
+        for seg in tqdm(segments, total=len(segments), desc="Writing .srt"):
+            text = seg['text'].strip()
+            if len(text) < 10:
+                continue
+            f.write(f"{idx}\n")
+            f.write(f"{fmt(seg['start'])} --> {fmt(seg['end'])}\n")
+            f.write(f"{text}\n\n")
+            idx += 1
+
+    print(f"Saved: {srt_path}")
+    return srt_path
+
+
+def audio_split_pipeline(audio_file: str, min_interval: float = 300, max_interval: float = 500) -> list[Path]:
+    """Split an audio file into chunks at silence points within [min_interval, max_interval] seconds."""
+    audio_path = Path(audio_file)
+    if not audio_path.exists():
+        raise FileNotFoundError(f"Audio file '{audio_path}' not found")
+
+    log_path = audio_path.with_name(audio_path.stem + '_silence.log')
+    if not log_path.exists():
+        print("Silence log not found, running silence detection...")
+        detect_silence(str(audio_path))
+
+    silence_periods = parse_silence_log(log_path)
+    if not silence_periods:
+        raise RuntimeError("No silence periods found in log file")
+
+    total_duration = get_audio_duration(audio_path)
+    print(f"Audio duration: {format_time(total_duration)}")
+
+    intervals = find_split_points(silence_periods, total_duration, min_interval, max_interval)
+
+    output_path = log_path.with_suffix('.split.log')
+    with open(output_path, 'w') as f:
+        f.write(f"# Audio split points (min={min_interval}s, max={max_interval}s)\n")
+        f.write(f"# Total duration: {format_time(total_duration)}\n")
+        f.write(f"# Number of intervals: {len(intervals)}\n\n")
+        for i, interval in enumerate(intervals, 1):
+            line = f"interval_{i:03d}: {format_time(interval.start)} -> {format_time(interval.end)} (duration: {interval.duration:.2f}s)"
+            print(line)
+            f.write(line + "\n")
+
+    print(f"\nSplit points saved to: {output_path}")
+    print(f"\nSplitting audio into {len(intervals)} chunks...")
+    output_files = split_audio_file(audio_path, intervals)
+    print(f"\nDone! Created {len(output_files)} audio chunks in {audio_path.parent}")
     return output_files
