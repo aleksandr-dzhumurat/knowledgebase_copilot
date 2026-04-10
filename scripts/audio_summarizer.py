@@ -59,23 +59,4 @@ if __name__ == "__main__":
 
     for f in audio_file_iterator(limit=args.limit, prefix=args.prefix):
         print(f"Processing: {f}")
-
-        audio_file = llm_adapter._client.files.upload(
-            file=f,
-            config={"mime_type": "audio/mpeg"},
-        )
-        print(f"Uploaded: {audio_file.name}")
-        audio_part = audio_file
-
-        response = llm_adapter._client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[
-                "Please provide a concise summary of this audio recording. "
-                "Highlight the main topics discussed and any significant conclusions.",
-                audio_part,
-            ],
-        )
-
-        output_file = output_dir / f"{f.stem}.txt"
-        output_file.write_text(response.text, encoding="utf-8")
-        print(f"Saved: {output_file}")
+        llm_adapter.audio_to_text_pipeline(f, output_dir)

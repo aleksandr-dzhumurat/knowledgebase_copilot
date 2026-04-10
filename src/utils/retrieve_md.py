@@ -1,10 +1,17 @@
 import hashlib
+import logging
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import tiktoken
 from sklearn.feature_extraction.text import TfidfVectorizer
+
+logger = logging.getLogger(__name__)
+
+_TIKTOKEN_ENCODING = "cl100k_base"
+_MERGE_MAX_TOKENS = 512
+_OVERLAP_BLOCKS = 3
 
 
 @dataclass
@@ -207,6 +214,49 @@ def read_srt_nodes(file_path: Path) -> list[DocumentNode]:
     return nodes
 
 
+def summarize_srt(file_path: Path, window: int = _MERGE_MAX_TOKENS) -> list[DocumentNode]:
+    """Merge fine-grained SRT nodes into larger chunks of up to _MERGE_MAX_TOKENS tokens.
+
+    Iterates over nodes from read_srt_nodes, accumulating text into a buffer.
+    When adding the next node would exceed the token limit, flushes the buffer as
+    a new DocumentNode and seeds the next buffer with the last _OVERLAP_BLOCKS nodes
+    for context overlap.
+    """
+    enc = tiktoken.get_encoding(_TIKTOKEN_ENCODING)
+    raw_nodes = read_srt_nodes(file_path)
+    if not raw_nodes:
+        return []
+
+    merged: list[DocumentNode] = []
+    buffer: list[DocumentNode] = []
+    buffer_tokens = 0
+
+    def _flush(buf: list[DocumentNode]) -> DocumentNode:
+        start = buf[0].header.split(' --> ')[0]
+        end = buf[-1].header.split(' --> ')[-1]
+        header = f"{start} --> {end}"
+        body = " ".join(n.body for n in buf)
+        return DocumentNode(header=header, body=body, source=file_path)
+
+    for node in raw_nodes:
+        node_tokens = len(enc.encode(node.body))
+        if buffer and buffer_tokens + node_tokens > window:
+            merged.append(_flush(buffer))
+            buffer = buffer[-_OVERLAP_BLOCKS:]
+            buffer_tokens = sum(len(enc.encode(n.body)) for n in buffer)
+        buffer.append(node)
+        buffer_tokens += node_tokens
+
+    if buffer:
+        merged.append(_flush(buffer))
+
+    logger.info(
+        "summarize_srt: %d raw blocks → %d merged blocks (%s)",
+        len(raw_nodes), len(merged), file_path.name,
+    )
+    return merged
+
+
 class DocumentIndex:
     def __init__(self, nodes: list[DocumentNode]):
         self._nodes = nodes
@@ -232,15 +282,13 @@ class DocumentIndex:
         return cls(nodes)
 
     @classmethod
-    def from_srt_file(cls, file_path: Path) -> "DocumentIndex":
+    def from_srt_file(cls, file_path: Path, window: int = _MERGE_MAX_TOKENS) -> "DocumentIndex":
         """Factory: build a DocumentIndex from an SRT subtitles file.
 
-        Each SRT entry becomes a DocumentNode with:
-          header = timestamp line (e.g. '00:00:01,000 --> 00:00:04,500')
-          body   = subtitle text
-          source = path to the .srt file
+        Fine-grained SRT entries are merged into larger chunks (up to `window` tokens)
+        with a 3-entry overlap between consecutive chunks.
         """
-        nodes = read_srt_nodes(file_path)
+        nodes = summarize_srt(file_path, window=window)
         if not nodes:
             raise ValueError(f"No nodes parsed from {file_path}")
         return cls(nodes)
