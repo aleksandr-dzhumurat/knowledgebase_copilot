@@ -185,6 +185,28 @@ def read_md_nodes(file_path: Path) -> list[DocumentNode]:
     return nodes
 
 
+def read_srt_nodes(file_path: Path) -> list[DocumentNode]:
+    """Parse an SRT file and return a list of DocumentNode, one per subtitle entry."""
+    if not file_path.exists():
+        print(f"Error: File not found at {file_path}")
+        return []
+
+    nodes = []
+    content = file_path.read_text(encoding="utf-8")
+    blocks = re.split(r'\n\n+', content.strip())
+    for block in blocks:
+        lines = block.strip().splitlines()
+        if len(lines) < 3:
+            continue
+        # lines[0] = index, lines[1] = timestamp, lines[2:] = text
+        timestamp = lines[1].strip()
+        body = " ".join(line.strip() for line in lines[2:])
+        if not body:
+            continue
+        nodes.append(DocumentNode(header=timestamp, body=body, source=file_path))
+    return nodes
+
+
 class DocumentIndex:
     def __init__(self, nodes: list[DocumentNode]):
         self._nodes = nodes
@@ -205,6 +227,20 @@ class DocumentIndex:
     def from_md_file(cls, file_path: Path) -> "DocumentIndex":
         """Factory: build a DocumentIndex from a markdown file."""
         nodes = read_md_nodes(file_path)
+        if not nodes:
+            raise ValueError(f"No nodes parsed from {file_path}")
+        return cls(nodes)
+
+    @classmethod
+    def from_srt_file(cls, file_path: Path) -> "DocumentIndex":
+        """Factory: build a DocumentIndex from an SRT subtitles file.
+
+        Each SRT entry becomes a DocumentNode with:
+          header = timestamp line (e.g. '00:00:01,000 --> 00:00:04,500')
+          body   = subtitle text
+          source = path to the .srt file
+        """
+        nodes = read_srt_nodes(file_path)
         if not nodes:
             raise ValueError(f"No nodes parsed from {file_path}")
         return cls(nodes)
