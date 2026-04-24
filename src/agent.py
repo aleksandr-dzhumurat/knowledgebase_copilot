@@ -18,11 +18,11 @@ from prompts import (
     RETRIEVAL_AGENT_INSTRUCTIONS,
     home_dir_prompt,
 )
-from utils.audio import convert_to_mp3, extract_audio_pipeline, transcribe
-from utils.pdf_to_md import convert, reformat_image_links
-from utils.retrieve_md import DocumentIndex, DocumentNode
-from utils.youtube import download_audio as yt_download_audio
-from utils.youtube import download_video as yt_download_video
+from mindbase_layer.audio import convert_to_mp3, extract_audio_pipeline, transcribe
+from mindbase_layer.pdf_to_md import convert, reformat_image_links
+from mindbase_layer.retrieve_md import DocumentIndex, DocumentNode
+from mindbase_layer.youtube import download_audio as yt_download_audio
+from mindbase_layer.youtube import download_video as yt_download_video
 
 Agent.instrument_all(InstrumentationSettings(include_content=True, version=1))
 langfuse = get_client()
@@ -39,7 +39,7 @@ class RetrievalDependencies:
 
 
 _main_model = OpenAIChatModel(
-    'Qwen/Qwen3-32B-fast',
+    'Qwen/Qwen3-32B',
     provider=NebiusProvider(api_key=os.getenv('NEBIUS_API_KEY'))
 )
 

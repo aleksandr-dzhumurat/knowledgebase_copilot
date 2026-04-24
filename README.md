@@ -1,12 +1,36 @@
 # Home Brain
 
-## Python Dependencies
+## Installation
 
-Install with:
+### As a Python package (from GitHub)
+
+Install `mindbase_layer` into another project:
+
+```bash
+# latest main branch
+uv add "mindbase-layer @ git+https://github.com/aleksandr-dzhumurat/automation_toolkit.git"
+
+# pin to a specific tag
+uv add "mindbase-layer @ git+https://github.com/aleksandr-dzhumurat/automation_toolkit.git@v0.1.0"
+
+# with local Apple Silicon transcription (mlx-whisper)
+uv add "mindbase-layer[whisper] @ git+https://github.com/aleksandr-dzhumurat/automation_toolkit.git"
+```
+
+Or add to your `pyproject.toml`:
+
+```toml
+dependencies = [
+    "mindbase-layer @ git+https://github.com/aleksandr-dzhumurat/automation_toolkit.git@main",
+]
+```
+
+### Local development
+
 ```bash
 uv venv
 source .venv/bin/activate
-uv pip install -r requirements.txt
+uv pip install -e ".[whisper]"
 ```
 
 ## Agent usage
@@ -107,7 +131,7 @@ Requires `mlx-whisper` and `tqdm`: `uv pip install mlx-whisper tqdm`
 
 Option B — Google API:
 ```bash
-python scripts/audio_summarizer.py --prefix recording_chunk --limit 10
+python scripts/cloud_audio_summarizer.py --prefix recording_chunk --limit 10
 ```
 Output: `data/recognized_speech/recording_chunk_01.txt`, ...
 

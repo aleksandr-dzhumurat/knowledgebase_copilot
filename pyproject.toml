@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mindbase-layer"
+version = "0.1.0"
+description = "Personal knowledge-management toolkit: audio transcription, document indexing, and retrieval"
+requires-python = ">=3.11"
+dependencies = [
+    # Text processing & retrieval
+    "tiktoken",
+    "scikit-learn",
+    # PDF ingestion
+    "pypdf>=5.1.0",
+    "docling",
+    # LLM / AI
+    "google-genai",
+    "pydantic-ai",
+    "langfuse",
+    "langchain-community",
+    # YouTube downloading
+    "pytubefix",
+    # HTML parsing
+    "beautifulsoup4==4.12.3",
+    # Utilities
+    "python-dotenv==1.0.0",
+    "tqdm",
+    "ollama",
+]
+
+[project.optional-dependencies]
+# Apple Silicon local transcription — not available on other platforms
+whisper = [
+    "mlx-whisper",
+]
+
+[tool.hatch.build.targets.wheel]
+# Ship only src/mindbase_layer, not src/agent.py etc.
+packages = ["src/mindbase_layer"]

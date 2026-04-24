@@ -2,7 +2,7 @@ import re
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from utils.retrieve_md import DocumentNode
+    from mindbase_layer.retrieve_md import DocumentNode
 
 _BOLD = "\033[1m"
 _YELLOW = "\033[33m"

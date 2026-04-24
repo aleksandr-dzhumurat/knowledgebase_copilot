@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
-from utils.pdf_to_md import convert, filter_pages, get_pdf_num_pages, reformat_image_links, remove_images
+from mindbase_layer.pdf_to_md import convert, filter_pages, get_pdf_num_pages, reformat_image_links, remove_images
 
 __all__ = ["convert", "filter_pages", "get_pdf_num_pages", "reformat_image_links", "remove_images"]
 
