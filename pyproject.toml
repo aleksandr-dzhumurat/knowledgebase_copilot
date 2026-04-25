@@ -16,7 +16,7 @@ dependencies = [
     "docling",
     # LLM / AI
     "google-genai",
-    "pydantic-ai",
+    "pydantic-ai>=1.87.0",
     "langfuse",
     "langchain-community",
     # YouTube downloading
@@ -24,7 +24,7 @@ dependencies = [
     # HTML parsing
     "beautifulsoup4==4.12.3",
     # Utilities
-    "python-dotenv==1.0.0",
+    "python-dotenv>=1.1.0",
     "tqdm",
     "ollama",
 ]

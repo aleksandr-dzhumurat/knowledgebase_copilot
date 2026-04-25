@@ -6,6 +6,7 @@ import pypdf
 from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.exceptions import ConversionError
 from docling_core.types.doc import ImageRefMode, PictureItem, TableItem
 
 
@@ -114,7 +115,12 @@ def convert(pdf_path: Path, start_page: int) -> None:
         logging.info("Processing slide %d (page %d/%d)...", actual_slide_no, i, num_pages)
 
         # Convert exactly one page at a time using page_range param
-        result = converter.convert(pdf_path, page_range=(i, i))
+        try:
+            result = converter.convert(pdf_path, page_range=(i, i))
+        except ConversionError as e:
+            logging.warning("Skipping page %d: %s", actual_slide_no, e)
+            full_md_content.append(f"## Slide {actual_slide_no}\n\n*(page could not be converted)*")
+            continue
         doc = result.document
         stem = pdf_path.stem
 
