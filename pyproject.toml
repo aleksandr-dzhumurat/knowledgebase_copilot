@@ -16,7 +16,7 @@ dependencies = [
     "docling",
     # LLM / AI
     "google-genai",
-    "pydantic-ai>=1.87.0",
+    "pydantic-ai-slim[openai]>=1.87.0",
     "langfuse",
     "langchain-community",
     # YouTube downloading

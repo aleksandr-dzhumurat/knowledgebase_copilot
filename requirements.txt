@@ -10,7 +10,7 @@ tqdm
 
 # Agentic AI
 google-genai
-pydantic-ai>=1.87.0
+pydantic-ai-slim[openai]>=1.87.0
 langfuse
 
 # HTML parsing
