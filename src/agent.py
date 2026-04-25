@@ -94,7 +94,11 @@ SEARCH_DIRS = ["Downloads", "Documents", "PycharmProjects"]
 
 @project_manager_agent.tool
 def file_search(ctx: RunContext[SupportDependencies], filename: str) -> str:
-    """Search for a file by name across Downloads, Documents and PycharmProjects under home_dir."""
+    """Search for a file by name across Downloads, Documents and PycharmProjects under home_dir.
+    If filename is an absolute path, checks existence directly without searching."""
+    path = Path(filename)
+    if path.is_absolute():
+        return str(path) if path.exists() else f"File not found: {path}"
     matches = []
     for search_dir in SEARCH_DIRS:
         base = ctx.deps.home_dir / search_dir
@@ -132,17 +136,11 @@ def file_fuzzy_search(ctx: RunContext[SupportDependencies], query: str) -> str:
 
 
 @project_manager_agent.tool
-async def extract_audio(_ctx: RunContext[SupportDependencies], video_path: str) -> str:
-    """Extracts audio from a video file and saves it as an MP3 file. Expects a full resolved path."""
-    output_file = extract_audio_pipeline(video_path)
-    return f"Audio extracted to: {output_file}"
-
-
-@project_manager_agent.tool
-async def extract_srt(_ctx: RunContext[SupportDependencies], mp3_path: str, language: str = "en") -> str:
-    """Transcribes an MP3 file to an SRT subtitles file using Whisper. language is a BCP-47 code e.g. 'en', 'ru'."""
+async def generate_subtitles(_ctx: RunContext[SupportDependencies], video_path: str, language: str = "en") -> str:
+    """Generate an SRT subtitles file from a video. language is a BCP-47 code e.g. 'en', 'ru'. Expects a full resolved path."""
+    mp3_path = str(extract_audio_pipeline(video_path))
     srt_path = transcribe(mp3_path, language=language)
-    return f"SRT saved to: {srt_path}"
+    return f"Subtitles saved to: {srt_path}"
 
 
 @project_manager_agent.tool

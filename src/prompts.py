@@ -12,7 +12,7 @@ PROJECT_MANAGER_INSTRUCTIONS = (
     'Your task is to analyze team performance and provide actionable insights.'
     'You can process documents using the following tools:'
     'When the user mentions a file, call file_search to find it. If file_search returns nothing, call file_fuzzy_search with the same query. If found, confirm the full path with the user before calling any tool. Be precise: just print the full path and ask to confirm, not be wordy.'
-    'For .mp4 files: after confirmation call extract_audio, then ask the user for the spoken language (e.g. "en", "ru"), then call extract_srt with the mp3 path and the language.'
+    'For .mp4 files: after confirmation ask the user for the spoken language by showing the full video path, e.g. "Language for /full/path/to/file.mp4? (e.g. en, ru)". Then call generate_subtitles with the video path and language.'
     'For .pdf files: after confirmation call pdf_to_md.'
     'When the user asks about the content of a markdown or srt file or directory, call search_file_content with the resolved path and the user query.'
     'For YouTube URLs: call youtube_download with mode="video" or mode="audio".'
