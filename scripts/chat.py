@@ -1,4 +1,5 @@
 import itertools
+import logging
 import os
 import sys
 import threading
@@ -8,6 +9,15 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from agent import SupportDependencies, langfuse, project_manager_agent
 from memory_layer import MessageHistory
+
+_DIM = "\033[2;37m"   # dim white (light gray)
+_RESET = "\033[0m"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format=f"{_DIM}%(name)s %(levelname)s %(message)s{_RESET}",
+    stream=sys.stdout,
+)
 
 
 def _spinner(stop_event: threading.Event) -> None:

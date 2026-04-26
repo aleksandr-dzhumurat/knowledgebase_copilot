@@ -1,11 +1,11 @@
+import logging
 import os
+import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-
-import shutil
 
 from langfuse import get_client
 from pydantic_ai import Agent, RunContext
@@ -16,16 +16,18 @@ from pydantic_ai.providers.nebius import NebiusProvider
 from prompts import (
     PROJECT_MANAGER_INSTRUCTIONS,
     RETRIEVAL_AGENT_INSTRUCTIONS,
+    SUMMARIZE_INSTRUCTIONS,
     home_dir_prompt,
 )
 from mindbase_layer.audio import convert_to_mp3, extract_audio_pipeline, transcribe
 from mindbase_layer.pdf_to_md import convert, reformat_image_links
-from mindbase_layer.retrieve_md import DocumentIndex, DocumentNode
+from mindbase_layer.retrieve_md import DocumentIndex, DocumentNode, summarize_srt
 from mindbase_layer.youtube import download_audio as yt_download_audio
 from mindbase_layer.youtube import download_video as yt_download_video
 
 Agent.instrument_all(InstrumentationSettings(include_content=True, version=1))
 langfuse = get_client()
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -36,6 +38,12 @@ class SupportDependencies:
 @dataclass
 class RetrievalDependencies:
     md_path: Path
+
+
+@dataclass
+class SummarizeDependencies:
+    text: str
+    language: str
 
 
 _main_model = OpenAIChatModel(
@@ -54,6 +62,21 @@ retrieval_agent = Agent(
     deps_type=RetrievalDependencies,
     output_type=str,
 )
+
+_summarize_agent = Agent(
+    _main_model,
+    instructions=SUMMARIZE_INSTRUCTIONS,
+    deps_type=SummarizeDependencies,
+    output_type=str,
+)
+
+
+@_summarize_agent.system_prompt
+def summarize_system_prompt(ctx: RunContext[SummarizeDependencies]) -> str:
+    return (
+        f"Respond in: {ctx.deps.language}\n\n"
+        f"Transcript:\n{ctx.deps.text}"
+    )
 
 
 @retrieval_agent.tool
@@ -133,6 +156,40 @@ def file_fuzzy_search(ctx: RunContext[SupportDependencies], query: str) -> str:
     for score, node in results:
         lines.append(f"  [{score:.4f}] {node.source}")
     return "\n".join(lines)
+
+
+@project_manager_agent.tool
+async def summarize_video(ctx: RunContext[SupportDependencies], video_path: str, spoken_language: str = "en") -> str:
+    """Summarize a video lecture. Generates subtitles first if they don't exist.
+    spoken_language: language spoken in the video (BCP-47, e.g. 'en', 'ru'). Summary will be in the same language.
+    """
+    path = Path(video_path)
+    srt_path = path.with_suffix(".srt")
+    if not srt_path.exists():
+        logger.info("summarize_video: generating subtitles for %s (lang=%s)", path.name, spoken_language)
+        mp3_path = str(extract_audio_pipeline(video_path))
+        srt_path = Path(transcribe(mp3_path, language=spoken_language))
+    else:
+        logger.info("summarize_video: using existing subtitles %s", srt_path.name)
+    logger.info("summarize_video: indexing %s", srt_path.name)
+    nodes = summarize_srt(srt_path)
+    if not nodes:
+        return f"Could not extract text from {srt_path}"
+    logger.info("summarize_video: summarizing %d chunks", len(nodes))
+    full_text = "\n\n".join(
+        f"[{node.header}]\n{node.body}" for node in nodes
+    )
+    result = await _summarize_agent.run(
+        "Summarize this video transcript.",
+        deps=SummarizeDependencies(text=full_text, language=spoken_language),
+        usage=ctx.usage,
+    )
+    u = result.usage()
+    logger.info("summarize_video tokens: input=%d output=%d total=%d", u.input_tokens, u.output_tokens, u.input_tokens + u.output_tokens)
+    summary_path = srt_path.with_name(f"{srt_path.stem}_summary.md")
+    summary_path.write_text(result.output, encoding="utf-8")
+    logger.info("summarize_video: summary saved to %s", summary_path)
+    return result.output
 
 
 @project_manager_agent.tool

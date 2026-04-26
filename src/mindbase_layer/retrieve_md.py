@@ -294,13 +294,20 @@ class DocumentIndex:
         return cls(nodes)
 
     @classmethod
-    def from_dir(cls, dir_path: Path) -> "DocumentIndex":
-        """Factory: build a DocumentIndex from all .md files in a directory."""
+    def from_dir(cls, dir_path: Path, ext: str | None = None) -> "DocumentIndex":
+        """Factory: build a DocumentIndex from .md and/or .srt files in a directory tree.
+
+        ext: restrict to 'md', 'srt', or None (both).
+        """
         nodes = []
-        for md_file in sorted(dir_path.glob("*.md")):
-            nodes.extend(read_md_nodes(md_file))
+        if ext in (None, "md"):
+            for md_file in sorted(dir_path.rglob("*.md")):
+                nodes.extend(read_md_nodes(md_file))
+        if ext in (None, "srt"):
+            for srt_file in sorted(dir_path.rglob("*.srt")):
+                nodes.extend(summarize_srt(srt_file))
         if not nodes:
-            raise ValueError(f"No nodes parsed from any .md file in {dir_path}")
+            raise ValueError(f"No nodes parsed from any .{ext or 'md/.srt'} file in {dir_path}")
         return cls(nodes)
 
 
