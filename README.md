@@ -1,4 +1,6 @@
-# Home Brain
+# Mindbase layer
+
+Token-efficient retrieval layer for agentic pipeline.
 
 ## Installation
 

@@ -5,6 +5,9 @@ TF-IDF based document index for markdown and SRT files.
 Usage:
     uv run python scripts/retrieval.py --path path/to/file.md --query "your search query"
     uv run python scripts/retrieval.py --path path/to/file.srt --query "fine-tuning" --top-k 3
+    
+    works with srt
+    uv run python scripts/retrieval.py --path /Users/adzhumurat/PycharmProjects/LLM_course/course_materials --query "chain rule"
 """
 
 import argparse
@@ -25,10 +28,11 @@ def main():
     parser.add_argument("--path", type=Path, required=True, help="Path to markdown or .srt file (or directory of .md files)")
     parser.add_argument("--query", type=str, required=True, help="Search query")
     parser.add_argument("--top-k", type=int, default=5, dest="top_k", help="Number of results (default: 5)")
+    parser.add_argument("--ext", type=str, default=None, choices=["md", "srt"], help="Limit directory scan to this extension (md or srt)")
     args = parser.parse_args()
 
     if args.path.is_dir():
-        index = DocumentIndex.from_dir(args.path)
+        index = DocumentIndex.from_dir(args.path, ext=args.ext)
     elif args.path.suffix == '.srt':
         index = DocumentIndex.from_srt_file(args.path)
     else:

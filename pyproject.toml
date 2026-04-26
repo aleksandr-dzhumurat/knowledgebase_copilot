@@ -14,19 +14,10 @@ dependencies = [
     # PDF ingestion
     "pypdf>=5.1.0",
     "docling",
-    # LLM / AI
-    "google-genai",
-    "pydantic-ai-slim[openai]>=1.87.0",
-    "langfuse",
-    "langchain-community",
     # YouTube downloading
     "pytubefix",
-    # HTML parsing
-    "beautifulsoup4==4.12.3",
     # Utilities
-    "python-dotenv>=1.1.0",
     "tqdm",
-    "ollama",
 ]
 
 [project.optional-dependencies]
