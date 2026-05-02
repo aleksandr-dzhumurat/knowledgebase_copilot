@@ -89,10 +89,10 @@ def query_documents(ctx: RunContext[RetrievalDependencies], query: str) -> str:
         index = DocumentIndex.from_srt_file(md_path)
     else:
         index = DocumentIndex.from_md_file(md_path)
-    results, total = index.search(query, top_k=5)
+    results = index.search(query, top_k=5)
     if not results:
         return f"No results found for query: '{query}'"
-    lines = [f"Found {len(results)} of {total} matching nodes:"]
+    lines = [f"Found {len(results)} matching nodes:"]
     for score, node in results:
         lines.append(f"\n[{score:.4f}] {node.header}")
         if node.body:
@@ -149,7 +149,7 @@ def file_fuzzy_search(ctx: RunContext[SupportDependencies], query: str) -> str:
     if not nodes:
         return "No files found in search directories."
     index = DocumentIndex(nodes)
-    results, _ = index.search(query, top_k=10)
+    results = index.search(query, top_k=10)
     if not results:
         return f"No files matching '{query}' found."
     lines = [f"Top {len(results)} fuzzy matches for '{query}':"]

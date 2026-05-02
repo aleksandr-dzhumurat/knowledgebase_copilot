@@ -31,6 +31,9 @@ class DocumentNode:
     def __post_init__(self):
         self.node_name = hashlib.md5((self.header + self.body).encode()).hexdigest()
 
+    def __str__(self):
+        return f"{self.header}\n{self.body[:300]}...\n{self.node_name}"
+
 
 def is_duplicate(body1: str, body2: str, mode: str = "exact") -> bool:
     """Check if two slide bodies are duplicates using the specified mode."""
@@ -167,27 +170,14 @@ def read_md_nodes(file_path: Path) -> list[DocumentNode]:
         for _, header_line, body in _parse_sections(content)
     ]
 
-    parent_level: int = 0
-    parent_node: DocumentNode | None = None
-    previous_level: int = 0
-    previous_node: DocumentNode | None = None
-
+    stack: list[tuple[int, DocumentNode]] = []
     for node in nodes:
         current_level = _header_level(node.header)
-
-        if parent_level > 0:
-            diff = current_level - parent_level
-            if diff == 1:
-                node.parent = parent_node
-            elif diff >= 2:
-                parent_level = previous_level
-                parent_node = previous_node
-                node.parent = parent_node
-
-        previous_level = current_level
-        previous_node = node
-        parent_level = current_level
-        parent_node = node
+        while stack and stack[-1][0] >= current_level:
+            stack.pop()
+        if stack:
+            node.parent = stack[-1][1]
+        stack.append((current_level, node))
 
     return nodes
 
@@ -257,6 +247,14 @@ def summarize_srt(file_path: Path, window: int = _MERGE_MAX_TOKENS) -> list[Docu
     return merged
 
 
+class _IlocIndexer:
+    def __init__(self, nodes: list[DocumentNode]):
+        self._nodes = nodes
+
+    def __getitem__(self, index: int) -> DocumentNode:
+        return self._nodes[index]
+
+
 class DocumentIndex:
     def __init__(self, nodes: list[DocumentNode]):
         self._nodes = nodes
@@ -264,18 +262,30 @@ class DocumentIndex:
         corpus = [f"{node.header}\n{node.body}" for node in nodes]
         self._matrix = self._vectorizer.fit_transform(corpus)
 
-    def search(self, query: str, top_k: int = 5) -> tuple[list[tuple[float, DocumentNode]], int]:
-        """Return (top_k results, total above-zero count) ranked by TF-IDF cosine similarity."""
+    @property
+    def iloc(self) -> _IlocIndexer:
+        return _IlocIndexer(self._nodes)
+
+    def __getitem__(self, node_name: str) -> DocumentNode:
+        for node in self._nodes:
+            if node.node_name == node_name:
+                return node
+        raise KeyError(f"No node with node_name={node_name!r}")
+
+    def get_childs(self, node_name: str) -> list[DocumentNode]:
+        return [node for node in self._nodes if node.parent is not None and node.parent.node_name == node_name]
+
+    def search(self, query: str, top_k: int = 5) -> list[tuple[float, DocumentNode]]:
+        """Return top_k results ranked by TF-IDF cosine similarity."""
         query_vec = self._vectorizer.transform([query])
         scores = (self._matrix @ query_vec.T).toarray().flatten()
-        total_nonzero = int((scores > 0).sum())
         top_indices = scores.argsort()[::-1][:top_k]
-        results = [(float(scores[i]), self._nodes[i]) for i in top_indices if scores[i] > 0]
-        return results, total_nonzero
+        return [(float(scores[i]), self._nodes[i]) for i in top_indices if scores[i] > 0]
 
     @classmethod
-    def from_md_file(cls, file_path: Path) -> "DocumentIndex":
+    def from_md_file(cls, file_path: str | Path) -> "DocumentIndex":
         """Factory: build a DocumentIndex from a markdown file."""
+        file_path = Path(file_path)
         nodes = read_md_nodes(file_path)
         if not nodes:
             raise ValueError(f"No nodes parsed from {file_path}")
