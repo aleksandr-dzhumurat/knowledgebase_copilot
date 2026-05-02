@@ -272,6 +272,17 @@ class DocumentIndex:
                 return node
         raise KeyError(f"No node with node_name={node_name!r}")
 
+    def describe(self) -> str:
+        num_blocks = len(self._nodes)
+        num_chapters = sum(1 for n in self._nodes if n.parent is None)
+        chars = [len(n.body) for n in self._nodes if n.body]
+        num_chars = sum(chars)
+        avg_chars = num_chars // len(chars) if chars else 0
+        return (
+            f"blocks: {num_blocks}, chapters: {num_chapters}, "
+            f"chars: {num_chars}, avg chars/block: {avg_chars}"
+        )
+
     def get_childs(self, node_name: str) -> list[DocumentNode]:
         return [node for node in self._nodes if node.parent is not None and node.parent.node_name == node_name]
 
