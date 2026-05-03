@@ -26,5 +26,11 @@ list-models:
 		-H "Authorization: Bearer ${NEBIUS_API_KEY}" \
 		| python3 -c "import json,sys; [print(m['id']) for m in json.load(sys.stdin).get('data',[])]"
 
-make chat:
+chat:
 	DATA_DIR=${CURRENT_DIR}/data/history PYTHONPATH=${CURRENT_DIR} uv run python scripts/chat.py
+
+run-jupyter:
+	DATA_DIR=${CURRENT_DIR}/data \
+	PYTHONPATH=${CURRENT_DIR}/src \
+	ENV_PATH=${CURRENT_DIR}/.env \
+	jupyter notebook scripts --ip 0.0.0.0 --port 8899 --NotebookApp.token='' --NotebookApp.password='' --allow-root --no-browser 

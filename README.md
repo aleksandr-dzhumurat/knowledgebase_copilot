@@ -6,7 +6,7 @@ Token-efficient retrieval layer for agentic pipeline.
 
 ### As a Python package (from GitHub)
 
-Install `mindbase_layer` into another project:
+Install `mindbase_layer` into external project:
 
 ```bash
 # latest main branch
@@ -25,6 +25,12 @@ Or add to your `pyproject.toml`:
 dependencies = [
     "mindbase-layer @ git+https://github.com/aleksandr-dzhumurat/automation_toolkit.git@main",
 ]
+```
+
+Or to requirements.txt
+
+```shell
+mindbase-layer @ git+https://github.com/aleksandr-dzhumurat/automation_toolkit.git
 ```
 
 ### Local development

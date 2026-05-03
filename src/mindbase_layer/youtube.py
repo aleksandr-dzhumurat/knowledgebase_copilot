@@ -12,9 +12,11 @@ def download_video(url: str, output_dir: Path | None = None) -> Path:
     if stream is None:
         raise ValueError(f"No video stream found for {url}")
     out_dir = str(output_dir) if output_dir else None
-    out_path = stream.download(output_path=out_dir)
-    logging.info("Video saved: %s", out_path)
-    return Path(out_path)
+    out_path = Path(stream.download(output_path=out_dir))
+    renamed = out_path.with_name(out_path.name.replace(" ", "_"))
+    out_path.rename(renamed)
+    logging.info("Video saved: %s", renamed)
+    return renamed
 
 
 def download_audio(url: str, output_dir: Path | None = None) -> Path:
@@ -24,6 +26,8 @@ def download_audio(url: str, output_dir: Path | None = None) -> Path:
     if stream is None:
         raise ValueError(f"No audio stream found for {url}")
     out_dir = str(output_dir) if output_dir else None
-    out_path = stream.download(output_path=out_dir, mp3=True)
-    logging.info("Audio saved: %s", out_path)
-    return Path(out_path)
+    out_path = Path(stream.download(output_path=out_dir, mp3=True))
+    renamed = out_path.with_name(out_path.name.replace(" ", "_"))
+    out_path.rename(renamed)
+    logging.info("Audio saved: %s", renamed)
+    return renamed

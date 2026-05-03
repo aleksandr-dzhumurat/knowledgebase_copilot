@@ -37,13 +37,13 @@ def main():
         index = DocumentIndex.from_srt_file(args.path)
     else:
         index = DocumentIndex.from_md_file(args.path)
-    results, total = index.search(args.query, top_k=args.top_k)
+    results = index.search(args.query, top_k=args.top_k)
 
     if not results:
         print("No matching nodes found.")
         return
 
-    print(f"Top {len(results)} results from {total} for: \"{args.query}\"\n")
+    print(f"Top {len(results)} results for: \"{args.query}\"\n")
     print_search_results(results, args.query)
 
 
